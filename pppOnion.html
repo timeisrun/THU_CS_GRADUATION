@@ -1,0 +1,743 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+ <link rel="Shortcut Icon" type="image/x-icon" href="./csPic.ico"/>
+<title>東海資工學分計算器</title>
+<script type='text/JavaScript' src='./lib/jquery-3.3.1.js'></script>
+<style>
+	td {
+		text-align : center;
+		border : 2px grey double;
+		padding : 5px;
+	}
+	.text {
+		font-family : DFKai-sb;
+		font-weight : bold;
+		font-size : 20px;
+	}
+	.easter-text {
+		font-family : DFKai-sb;
+		font-weight : bold;
+		font-size : 30px;
+	}
+	.mid-title {
+		font-family : DFKai-sb;
+		font-weight : bold;
+		font-size : 30px;
+	}
+	.button {
+		padding : 5px 14px;
+		border : solid #FFEF3F;
+		border-width : 1px 1px 0;
+		background : #FFDB7B;
+	}
+	.border-style {
+		width : 60%;
+		margin : 10px;
+		border : 5px #FFE4B5 solid;
+	}
+	.table-style {
+		border : 3px grey solid;
+		width : 80%;
+	}
+	.side {
+		position: fixed;
+		top: 75%;
+		right: 0px;
+		background: #FFFFFF;
+		border:5px #4169E1 solid;
+		padding: 10px 20px;
+		border-radius: 10px;
+		-moz-border-radius: 10px;
+		-webkit-border-radius: 10px;
+	}
+	.finance {
+		position: fixed;
+		top: 75%;
+		left: 0px;
+		background: #000000;
+		color: #FFFFFF;
+		border:5px #000000 solid;
+		padding: 8px 16px;
+		border-radius: 10px;
+		white-space: nowrap;
+		-moz-border-radius: 10px;
+		-webkit-border-radius: 10px;
+	}
+</style>
+<script type='text/JavaScript'>
+
+$(document).ready(new pppOnion().initApp);
+
+var picCoefficient = 60;
+var getFinanceFlag = false;
+
+function pppOnion() {
+
+	var btnAction = {
+		sendData : function() {
+		    if(!$('#userData').val()) {
+		        alert('【未貼上成績資料, 請重新輸入!】');
+                return;
+		    }
+		    
+			$.ajax({
+				type : 'POST',
+				url : 'analyzeData.php',
+				data: { 
+					userData: $('#userData').val(),
+					choiceYear : $('#choiceYear').val(),
+					choiceTeam : $('#choiceTeam').val()
+				},
+				success : function(response) {
+					var data = JSON.parse(response);
+					if(data[0] == 'success') {
+						$('#mainContent').hide();
+						contentFunc.userContent = data;
+						contentFunc.showContent();
+						side.baseSide();
+					} else {
+						alert(data);
+					}
+				},
+                error: function (jqXHR, exception) {
+                    var msg = '';
+                    if (jqXHR.status === 0) {
+                        msg = 'Not connect.\n Verify Network.';
+                    } else if (jqXHR.status == 404) {
+                        msg = 'Requested page not found. [404]';
+                    } else if (jqXHR.status == 500) {
+                        msg = 'Internal Server Error [500].';
+                    } else if (exception === 'parsererror') {
+                        msg = 'Requested JSON parse failed.';
+                    } else if (exception === 'timeout') {
+                        msg = 'Time out error.';
+                    } else if (exception === 'abort') {
+                        msg = 'Ajax request aborted.';
+                    } else {
+                        msg = 'Uncaught Error.\n' + jqXHR.responseText;
+                    }
+                    console.log(msg);
+                }
+			});
+		},
+
+		showSynopsis : function() {
+			var element = $('#showSynopsis');
+			if(element.is(':visible')) {
+				$(element).hide('fast');
+			} else {
+				$(element).show('slow');
+			}
+		},
+		
+		showUpdateLog : function() {
+			var element = $('#showUpdateLog');
+			if(element.is(':visible')) {
+				$(element).hide('fast');
+			} else {
+				$(element).show('slow');
+			}
+		},
+		
+		changeData : function() {
+			if(!$('#' + event.srcElement.name)) {
+				return;
+			}
+			var direction = $('#' + event.srcElement.name).val().split('_');
+			
+			if(direction.length == 3) {
+				var csData = contentFunc.userContent[7];
+				csData[direction[2]].push(['', '', csData[direction[0]][direction[1]][2]]);
+					
+				if(csData[direction[0]][direction[1]][0] != '') {
+					csData[direction[0]][direction[1]][2] = -1;
+				} else {
+					csData[direction[0]].splice(direction[1], 1);
+				}
+			} else {
+				var csData = contentFunc.userContent[7];
+				if(csData[direction[2]][direction[3]][2] != -1) {
+					csData[7].push(['', '', csData[direction[2]][direction[3]][2]]);
+				}
+				
+				csData[direction[2]][direction[3]][2] = csData[direction[0]][direction[1]][2];
+				
+				if(csData[direction[0]][direction[1]][0] != '') {
+					csData[direction[0]][direction[1]][2] = -1;
+				} else {
+					csData[direction[0]].splice(direction[1], 1);
+				}
+			}
+			
+			contentFunc.showContent();
+		}
+	}
+	
+	var contentFunc = {
+		userContent : [],
+		
+		showContent : function() {
+			if(contentFunc.userContent.length != 10) {
+				return;
+			}
+			
+			$('#upperContent').text('');
+			for(var i=0; i<8; i++) {
+				$('#content' + i).text('');
+			}
+			$('#lowerContent').text('');
+			
+			var data = contentFunc.userContent;
+			
+			var content = $('#upperContent');
+			content.append($('<br>'));
+			var unit = $('<span>').addClass('text').text(data[3] + ' ' + data[2] + ' 您好');
+			content.append(unit);
+			
+			content.append($('<br><br>'));
+			unit = $('<span>').addClass('text').text('您選擇的判斷標準為 【' + data[4] + '學年度】 入學的 【' + data[5] + '】');
+			content.append(unit);
+			
+			content.append($('<br>'));
+			var divUnit = $('<div>');
+			divUnit.addClass('text border-style');
+			divUnit.append($('<h2>').text('使用說明'));
+			divUnit.append($('<span>').text('1. 分為【基礎必修】，【通識必修】，【分組必修】，【分組必選】，【分組選修】，【系開選修】，【共同選修】'));
+			divUnit.append($('<br><br>'));
+			divUnit.append($('<span>').text('2. 每列的左邊是畢業規定課程(分析系辦網頁而來)，中間是已經修過的課程(分析成績總表而來)'));
+			divUnit.append($('<br><br>'));
+			divUnit.append($('<span>').text('3. 也可以選擇「其他課程名稱」直接換到想換的課程位置'));
+			divUnit.append($('<br><br>'));
+			divUnit.append($('<span>').text('(如果目的地位置已經有課程，則原來課程會被調到【無家可歸】，然後想換的課程會跑去目的地)'));
+			divUnit.append($('<br><br>'));
+			divUnit.append($('<span>').text('因為有時畢業規定課程的名稱和已修課程不同，導致課程未正確分類或被丟於【無家可歸】'));
+			divUnit.append($('<br><br><br>'));
+			divUnit.append($('<span>').text('除了手動調整之外，也可以私訊作者讓他增加例外判斷名單歐 <3'));
+			divUnit.append($('<br><br><br>'));
+			content.append(divUnit);
+			
+			var csData = data[7];
+			var allData = data[8];
+			var SRNumber = data[9];
+			var validNumberArray = [];
+			var title = ['【基礎必修】', '【通識必修】', '【分組必修】', '【分組必選】', '【分組選修】', '【系開選修】', '【共同選修】', '【無家可歸】'];
+			
+			for(var i=0; i<csData.length; i++) {
+				content = $('#content' + i);
+				content.append($('<br><br>'));
+				content.append($('<h1>').addClass('mid-title').text(title[i]));
+				
+				var validNumber = 0;
+				for(var j=0; j<csData[i].length; j++) {
+					if(csData[i][j][2] == -1) {
+						continue;
+					}
+					
+					var score = allData[csData[i][j][2]][5];
+					if(score == '通過' || score == '抵免' || score > 59) {
+						validNumber += parseInt(allData[csData[i][j][2]][4]);
+					}
+				}
+				validNumberArray.push(validNumber);
+				content.append($('<span>').addClass('text').text('此部分已得學分為：' + validNumber + '學分'));
+				content.append($('<br><br>'));
+				
+				unit = $('<table>').addClass('table-style');
+				unit.append($('<tr><td width="25%">畢業規定課程</td><td width="50%">已修課程</td><td width="25%">選項調換</td></tr>'));
+				
+				for(var j=0; j<csData[i].length; j++) {
+					var target = csData[i][j][2];
+					
+					var frontText = (csData[i][j][0]) ? csData[i][j][0] + '(' + csData[i][j][1] +'學分)' : '';												
+					if(target != -1) {
+						var trUnit = $('<tr>');
+						var tdUnit = $('<td>').text(frontText);
+						trUnit.append(tdUnit);
+						
+						var middleText = allData[target][3] + '(' + allData[target][0] + '學年度' + allData[target][1] + '學期)(學分:' + allData[target][4] + ', 成績:' + allData[target][5] + ')';
+						tdUnit = $('<td>').text(middleText);
+						var score = allData[target][5];
+						if(!(score == '通過' || score == '抵免' || score > 59)) {
+							tdUnit.css('background-color', 'red');
+						}
+						trUnit.append(tdUnit);
+						
+						tdUnit = $('<td>');
+						tdUnit.append($('<span>').text('調換到'));
+						var selectUnit = $('<select>');
+						selectUnit.attr('id', 'a' + target);
+						
+						var optionUnit = $('<option>');
+						optionUnit.text('請選擇...');
+						selectUnit.append(optionUnit);
+						
+						for(var k=0; k<csData.length; k++) {
+							optionUnit = $('<option>');
+							optionUnit.text(title[k] + '最下方');
+							optionUnit.val(i + '_' + j + '_' + k);
+							selectUnit.append(optionUnit);
+						}
+						
+						for(var k=0; k<csData.length; k++) {
+							for(var l=0; l<csData[k].length && csData[k][l][0] != ''; l++) {
+								if(csData[i][j][2] == csData[k][l][2]) {
+									continue;
+								}
+								
+								optionUnit = $('<option>');
+								optionUnit.text(csData[k][l][0]);
+								optionUnit.val(i + '_' + j + '_' + k + '_' + l);
+								selectUnit.append(optionUnit);
+							}
+						}
+						tdUnit.append(selectUnit);
+						
+						var btnUnit = $('<button>');
+						btnUnit.text('GO');
+						btnUnit.attr('name', 'a' + target);
+						btnUnit.on('click', btnAction.changeData);
+						tdUnit.append(btnUnit);
+						trUnit.append(tdUnit);
+					
+						unit.append(trUnit);
+					} else {
+						unit.append($('<tr><td>' + frontText + '</td><td></td><td></td></tr>'));
+					}
+				}
+				content.append(unit);
+			}
+			
+			$('#lowerContent').append($('<br><br>'));
+			
+			var content = $('<div>');
+			$('#lowerContent').append(content);
+			content.addClass('border-style');
+			content.append($('<br><br>'));
+			content.append($('<h1>').addClass('mid-title').text('【結果分析】'));
+			
+			// 2019-09-04 新增總學分註記
+			var totValidNumber = 0;
+			for (var i=0; i<validNumberArray.length; i++) {
+				totValidNumber += validNumberArray[i];
+			}
+			content.append($('<h3>目前學分達成成就： ' + totValidNumber + '/' + SRNumber[5] + '。</h3>'));
+			
+			var count = 1;
+			content.append($('<br><span>' + count++ + '. 勞作教育請自行確認，' + data[6] + '。</span>'));
+			
+			for(var i=1; i<2; i++) {
+				if(validNumberArray[1] < SRNumber[1]) {
+					content.append($('<br><span>' + count++ + '. 通識領域尚須修習' + (SRNumber[1] - validNumberArray[1]) + '學分。</span>'));
+				}
+			
+				var checkMap = {'人文' : 0, '社會' : 0, '自然' : 0, '文明與經典' : 0};
+				for(var j=0; j<csData[i].length; j++) {
+					var className = allData[csData[i][j][2]][3].split('：')[0];
+					checkMap[className] = 1;
+				}
+				
+				var haveDomain = 0;
+				for (var j in checkMap) {
+					haveDomain += checkMap[j];
+				}
+				if(haveDomain < 3) {
+					content.append($('<br><span>' + count++ + '. 通識領域未修習超過3領域。</span>'));
+				}
+			}
+		
+			var tempSum = validNumberArray[3] + validNumberArray[4];
+			if(tempSum < SRNumber[4]) {
+				content.append($('<br><span>' + count++ + '. 組必選(' + validNumberArray[3] + ') + 組選修(' + validNumberArray[4] + ') = ' + tempSum + ' 未滿足 【組選修】 規定' + SRNumber[4] + '學分。</span>'));
+			}
+			
+			tempSum = validNumberArray[3] + validNumberArray[4] + validNumberArray[5];
+			if(tempSum < SRNumber[3]) {
+				content.append($('<br><span>' + count++ + '. 組必選(' + validNumberArray[3] + ') + 組選修(' + validNumberArray[4] + ') + 系選修(' + validNumberArray[5] + ') = ' + tempSum + ' 未滿足 【系選修】 規定' + SRNumber[3] + '學分。</span>'));
+			}
+			
+			var moreInterest = (validNumberArray[1] > 14 ? validNumberArray[1]-14 : 0);
+			tempSum = validNumberArray[3] + validNumberArray[4] + validNumberArray[5] + validNumberArray[6] + moreInterest;
+			if(validNumberArray[3] + validNumberArray[4] + validNumberArray[5] + validNumberArray[6] < SRNumber[2]) {
+				content.append($('<br><span>' + count++ + '. 組必選(' + validNumberArray[3] + ') + 組選修(' + validNumberArray[4] + ') + 系選修(' + validNumberArray[5] + ') + 共選修(' + validNumberArray[6] + ') + 多餘的通識(' + moreInterest + ') = ' + tempSum + ' 未滿足 【共選修】 規定' + SRNumber[2] + '學分。</span>'));
+			}
+			
+			for(var i=0; i<3; i++) {
+				if(i == 1) {
+					continue;
+				} else {
+					for(var j=0; j<csData[i].length; j++) {
+						if(csData[i][j][2] == -1) {
+							content.append($('<br><span>' + count++ + '. ' + title[i] + '內，【' + csData[i][j][0] + '】尚未修習。</span>'));
+						} else if(!(allData[csData[i][j][2]][5] == '通過' || allData[csData[i][j][2]][5] == '抵免' || allData[csData[i][j][2]][5] > 59)) {
+							content.append($('<br><span>' + count++ + '. ' + title[i] + '內，因為【' + csData[i][j][0] + '】被當，請重修。</span>'));
+						}
+					}
+				}
+			}
+			
+			for(var i=3; i<4; i++) {
+				for(var j=0; j<csData[i].length; j++) {
+					if(csData[i][j][2] == -1) {
+						content.append($('<br><span>' + count++ + '. ' + title[i] + '內，【' + csData[i][j][0] + '】是必選但未修過，修了被當也沒關係。</span>'));
+					}
+				}
+			}
+			
+			content.append($('<br><br><br><br>'));
+			
+			$('#answerContent').show();
+		}
+	};
+	
+	var side = {
+		baseSide : function() {
+			$.ajax({
+				type : 'POST',
+				url : './getUserCount.php',
+				data: { 
+				},
+				success : function(response) {
+					var data = JSON.parse(response);
+					var sideBar = $('#sideBar');
+					sideBar.text('使用人次：' + data[0] + '人');
+					sideBar.attr('title', '上個使用者使用時間為：' + data[1]);
+				},
+				error : function() {
+				    var sideBar = $('#sideBar');
+					sideBar.text('使用人次：不告訴你 ><');
+				}
+			});
+		}
+	};
+	
+	var easterEgg = {
+		letPicBoom : function() {
+			if(picCoefficient < 100) {
+				picCoefficient += 20;
+				$('#upperPic').attr('width', picCoefficient + '%');
+			} else if (picCoefficient == 100) {
+				picCoefficient += 20;
+				easterEgg.showRecommendLink();
+				easterEgg.showPeople();
+				easterEgg.showFinance();
+			}
+		},
+		
+		showRecommendLink : function() {
+			$('#upperPic').hide('slow');
+			
+			$.ajax({
+				type : 'POST',
+				url : './getRecommendData.php',
+				data: { 
+				},
+				success : function(response) {
+					var links = JSON.parse(response);
+					
+					var RecommendLink = $('#RecommendLink');
+					var divUnit = $('<div>').text('推薦閱讀').addClass('easter-text').css('font-size', '50px');
+					RecommendLink.append(divUnit);
+					
+					var count = 1;
+					for(var i=0; i<links.length; i++) {
+						var divUnit = $('<div>');
+						var spanUnit = $('<span>').text(count++ + '. ').addClass('easter-text');
+						divUnit.append(spanUnit);
+						var aUnit = $('<a>').text(links[i][0]).attr('href', links[i][1]).attr('target', '_blank').addClass('easter-text');
+						divUnit.append(aUnit);
+						RecommendLink.append(divUnit);
+					}
+					
+					var divUnit = $('<br>');
+					RecommendLink.append(divUnit);
+				},
+				error : function() {
+				}
+			});
+		},
+		
+		showPeople : function() {
+			$('#onlinePeopleBack').css('display', 'block');
+			$('#historyPeopleBack').css('display', 'block');
+		},
+		
+		setAndGetPeople : function() {
+			$.ajax({
+				type : 'POST',
+				url : './getOnlineHistoryPeople.php',
+				data: { 
+				},
+				success : function(response) {
+					var data = JSON.parse(response);
+					
+					$('#onlinePeople').text('線上人數：' + data[0] + '人');
+					$('#historyPeople').text('來訪人數：' + data[1] + '人');
+				},
+				error : function() {
+					$('#onlinePeople').text('線上人數：不告訴你 ><');
+					$('#historyPeople').text('來訪人數：不告訴你 ><');
+				}
+			});
+		},
+		
+		showFinance : function() {
+			$('#financeInput').css('display', 'block');
+			$('#financeName').css('display', 'block');
+			$('#financePrice').css('display', 'block');
+		},
+		
+		getFinanceData : function() {
+			if(!getFinanceFlag) {
+				return;
+			}
+		
+			var financeID = $('#financeID').val();
+			
+			if (!financeID) {
+				alert('代號輸入錯誤');
+				return;
+			}
+			
+			$.ajax({
+				type : 'POST',
+				url : './getFinanceData.php',
+				data: { 
+					financeID: financeID
+				},
+				success : function(response) {
+					var data = JSON.parse(response);
+					
+					if(data.rtcode == '0000'){
+						if(data.msgArray.length == 0) {
+							getFinanceFlag = false;
+							alert('查無股票名稱或代號');	
+						}else if (data.msgArray.length >= 1) {
+							var data = data.msgArray[0];
+							
+							var fn = $('#financeName');
+							fn.text('');
+							fn.append($('<span>').text(data.n + ' ' + data.pz));
+							
+							var fp = $('#financePrice');
+							fp.text('');
+							var price = parseFloat(easterEgg.strip(data.pz - data.y, 12));
+							fp.append($('<span>').text(price + ' (' + easterEgg.strip(price / data.y * 100, 3) + '%)'));
+							
+							if(price == 0) {
+								fp.css('background-color', 'black');
+							} else if(price > 0) {
+								fp.css('background-color', 'red');
+							} else {
+								fp.css('background-color', 'green');
+							}
+						}
+					}
+				},
+				error : function() {
+					getFinanceFlag = false;
+				}
+			});
+		},
+		
+		strip : function(num, precision) {
+			return parseFloat(num.toPrecision(precision));
+		}
+	};
+	
+	return {
+		initApp : function() {
+			$('#userData').focus();
+			$('#FIND_ANS').on('click', btnAction.sendData);
+			$('#SYNOPSIS').on('click', btnAction.showSynopsis);
+			$('#UPDATE_LOG').on('click', btnAction.showUpdateLog);
+			$('#showSynopsis').hide();
+			$('#showUpdateLog').hide();
+			$('#answerContent').hide();
+			
+			side.baseSide();
+			easterEgg.setAndGetPeople();
+			
+			$('#upperPic').on('click', easterEgg.letPicBoom);
+			setInterval(easterEgg.setAndGetPeople, 30000);
+			setInterval(easterEgg.getFinanceData, 5000);
+			
+			$('#financeID').keyup(function(e) {
+				if (e.keyCode == 13) {
+					getFinanceFlag = true;
+					easterEgg.getFinanceData();
+				}
+			});
+		}	
+	};	
+}
+</script>
+</head>
+<body>
+	<div align="center">
+		<img id="upperPic" src="./n_y.png" width="60%">
+		<div id="RecommendLink" align="center">
+		</div>
+	</div>
+	<div align="center" style="padding-bottom:10px;	">
+		<span style="font-size:50px; font-weight:bold; font-family:DFKai-sb;">學分計算器</span>
+	</div>
+	<div id="mainContent">
+		<div align="center">
+			<button class="button text" type="button" id="SYNOPSIS">使用說明</button>
+			<button class="button text" type="button" id="UPDATE_LOG">更新紀錄</button>
+		</div>
+		<div align="center">			
+			<div id="showSynopsis" class="border-style">
+				<h3>使用說明</h3>
+				首先<br>
+				1. 有連接 database! 記錄了你的姓名和ip用作顯示使用人次 :P<br><br>
+				<h3>使用</h3>
+				請先選擇您所屬年級和組別，以取得系辦公告必選必修科目表<br>
+				再來下方有一欄輸入框<br>
+				請先登入<a Target="_blank" href="http://fsis.thu.edu.tw/mosi/ccsd3/index.php">學生資訊系統</a>「課表/考試/成績」→「成績」→「成績總表」<br>
+				檢視網頁原始碼「CTRL+U」<br>
+				對網頁原始碼內容「CTRL+A CTRL+C」，接著貼到輸入框<br>
+				最後按下「開始比對」按鈕，即可觀看結果<br><br>
+				本網頁容錯率不高XD，請溫柔的對待他，謝謝。<br>
+				有問題、有bug、配色建議、功能建議歡迎直接私訊作者 :3<br><br><br>
+			</div>
+			<div id="showUpdateLog" class="border-style">
+				<h3>更新內容(2020.01.06 22:40)</h3>
+				1. 學生資訊系統, 成績總表突然增加了GPA評分, 導致判斷錯誤, 已修正。<br>
+				2. 改變LOG呈現順序。<br>
+				3. 迎接新年到來，更換背景圖片。<br>
+				
+				<h3>更新內容(2019.09.04 09:51)</h3>
+				1. 增加108學年度。<br>
+				2. 增加總學分成就。<br>
+				3. 修改使用說明。<br><br>
+				
+				<h3>更新內容(2019.02.10 23:30)</h3>
+				1. 沒想過資工網頁會掛掉，增加了錯誤提示。<br><br>
+				
+				<h3>更新內容(2018.12.28 15:32)</h3>
+				1. 迎接新年到來，更換背景圖片。<br><br>
+				
+				<h3>更新內容(2018.12.20 10:50)</h3>
+				1. 增加107學年度。<br>
+				2. 殺了一隻蟲。<br><br>
+				
+				<h3>更新內容(2018.10.11 19:15)</h3>
+				1. 換背景圖片。<br>
+				2. 彩蛋3完成。<br> 
+				3. 彩蛋4不想做 :D。<br><br>
+				
+				<h3>更新內容(2018.10.04 11:57)</h3>
+				1. 彩蛋1完成。<br>
+				2. 彩蛋2完成。<br>
+				3. TODO 彩蛋3, 彩蛋4。<br><br>
+				
+				<h3>更新內容(2018.09.11 21:35)</h3>
+				1. 修掉小bug。<br>
+				2. 更新評估結果。<br>
+				3. SQL已經上線。<br>
+				4. 旁邊的休閒娛樂可以玩(?)<br>
+				5. TODO RandomString。<br><br>
+
+				<h3>更新內容(2018.09.09 21:41)</h3>
+				1. 整個網頁包括後端打掉重寫。<br>
+				2. 更新評估結果。<br>
+				3. 去掉音樂。<br>
+				4. 去掉右邊超連結。<br>
+				4. TODO Session SQL RandomString。<br><br>
+				
+				<h3>更新內容(2017.11.24 21:06)</h3>
+				1. 新增106學年度。<br>
+				2. 更換音樂。<br><br>
+				
+				<h3>更新內容(2017.9.19 14:29)</h3>
+				1. 刪了一堆廢話，使人更容易理解。<br>
+				2. 選修部分我也不知道到底哪些是資工系開，有些會分配到共選修去。<br>
+				3. 更換音樂。<br><br>
+
+				<h3>更新內容(2017.6.14 5:30)</h3>
+				1. 必選必修科目表改為用爬的。<br>
+				2. 更新學分計算方式。<br>
+				3. 除了分組選修外，其他大部分可自動分配至正確位置。<br>
+				4. 勞作教育分數不好辨識，故直接印出於結果。<br>
+				5. 更換音樂。<br><br><br>
+			</div>
+			<div class="border-style">
+				<br><br>
+				<span class="text">入學學年度:<span>
+				<select id="choiceYear">
+					<option value="102">102</option>
+					<option value="103">103</option>
+					<option value="104">104</option>
+					<option value="105" selected="selected">105</option>
+					<option value="106">106</option>
+					<option value="107">107</option>
+					<option value="108">108</option>
+				</select>
+				<br><br>
+				<span class="text">組別:</span> 
+				<select id="choiceTeam">
+					<option value="0">數創</option>
+					<option value="1">資電</option>
+					<option value="2" selected="selected">軟工</option>
+				</select>
+				<br><br><br>
+				<span class="text">在這貼你的成績總表html碼</span>
+				<br><br>
+				<textarea id="userData" rows="8" cols="70"></textarea>
+				<br><br>
+				<button class="button text" type="button" id="FIND_ANS">開始比對</button>
+				<br>
+				<br>
+			</div>
+		</div>
+	</div>
+	<div id="answerContent" align="center">
+		<div id="upperContent" align="center">
+		</div>
+		<div id="content0">
+		</div>
+		<div id="content1">
+		</div>
+		<div id="content2">
+		</div>
+		<div id="content3">
+		</div>
+		<div id="content4">
+		</div>
+		<div id="content5">
+		</div>
+		<div id="content6">
+		</div>
+		<div id="content7">
+		</div>
+		<div id="lowerContent" align="center">
+		</div>
+	</div>
+	<div>
+		<div id="financeInput" class="finance" style="display: none;">
+			<span>代號</span>
+			<input type="text" id="financeID" maxlength="6" size="6" style="text-align: center;"></input>
+		</div>
+		<div id="financeName" class="finance" style="margin-top: 50px; display: none;">
+		</div>
+		<div id="financePrice" class="finance" style="margin-top: 100px; display: none;">
+		</div>
+	</div>
+	<div>
+		<div class="side">
+			<a href="./leisure/index.html" target="_blank">休閒娛樂</a>
+		</div>
+		<div class="side" style="margin-top: 50px;">
+			<a id="sideBar" href="https://www.facebook.com/profile.php?id=100000227420751/" target="_blank"></a>
+		</div>
+		<div id="onlinePeopleBack" class="side" style="margin-top: 100px; display: none;">
+			<span id="onlinePeople"></span>
+		</div>
+		<div id="historyPeopleBack" class="side" style="margin-top: 150px; display: none;">
+			<span id="historyPeople"></span>
+		</div>
+	</div>
+</body>
+</html>
