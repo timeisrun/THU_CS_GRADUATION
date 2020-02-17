@@ -1,0 +1,273 @@
+<html>
+<head>
+<title>每日抽獎</title>
+<link rel="stylesheet" href="../../lib/bootstrap.min.css">
+<link rel="stylesheet" href="../../lib/DataTables/css/jquery.dataTables.min.css">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script type='text/JavaScript' src='../../lib/jquery-3.3.1.js'></script>
+<script type='text/JavaScript' src='../../lib/popper.min.js'></script>
+<script type='text/JavaScript' src='../../lib/bootstrap.min.js'></script>
+<script type='text/JavaScript' src='../../lib/DataTables/js/jquery.dataTables.min.js'></script>
+<script language="JavaScript">
+
+$(document).ready(new dailyLottery().initApp);
+
+function dailyLottery() {
+	var userName = '';
+	var userMoney = 0;
+	
+	var userAction = {
+		login : function() {
+			$.ajax({
+				url: 'login.php',
+				success: function(response) {
+					var data = JSON.parse(response);
+					userName = data[0];
+					userMoney = data[1];
+						
+					// TODO
+					console.log(data[2]);
+					
+					$('#userName').text(userName);
+					$('#userMoney').text(userMoney);
+				},
+				error: function(jqXHR, exception) {
+					var msg = '';
+                    if (jqXHR.status === 0) {
+                        msg = 'Not connect.\n Verify Network.';
+                    } else if (jqXHR.status == 404) {
+                        msg = 'Requested page not found. [404]';
+                    } else if (jqXHR.status == 500) {
+                        msg = 'Internal Server Error [500].';
+                    } else if (exception === 'parsererror') {
+                        msg = 'Requested JSON parse failed.';
+                    } else if (exception === 'timeout') {
+                        msg = 'Time out error.';
+                    } else if (exception === 'abort') {
+                        msg = 'Ajax request aborted.';
+                    } else {
+                        msg = 'Uncaught Error.\n' + jqXHR.responseText;
+                    }
+                    console.log(msg);
+					
+					$('#userName').text('帥哥/美女');
+					$('#userMoney').text('NaN');
+				}
+			});
+		},
+		
+		trustYourLucky : function() {
+			if (userMoney < 100) {
+				$('#congra').text('金錢不足! 12點過後會獲得500塊');
+				return;
+			}
+		
+			$.ajax({
+				url: 'letsLottery.php',
+				type: 'POST',
+				data : {
+					userName : userName,
+					userMoney : userMoney
+				},
+				success: function(response) {
+					var data = JSON.parse(response);
+					var flag = data[0];
+					
+					if(flag == 0) {
+						$('#congra').text('抽獎失敗!');
+						return;
+					} else if(flag == 2) {
+						$('#congra').text('金錢不足! 12點過後會獲得500塊');
+						return;
+					} else if(flag == 1) {
+						userName = data[1];
+						var userScore = data[2];
+						userMoney = data[3];
+						
+						// TODO
+						console.log(data[4]);
+						
+						if(userScore) {
+							$('#congra').text('恭喜您中了 ' + userScore + '元!!!');
+						} else {
+							$('#congra').text('沒中獎幫QQ');
+						}
+						
+						$('#userName').text(userName);
+						$('#userMoney').text(userMoney);
+					}
+				}
+			});
+		},
+		
+		getLotteryLog : function() {
+			$.ajax({
+				url: 'getLotteryLogger.php',
+				type: 'POST',
+				data : {
+					userName : userName
+				},
+				success: function(response) {
+					var data = JSON.parse(response);
+					var totalLottery = data[0];
+					var totalUser = data[1];
+					var logData = data[2];
+					var userData = data[3];
+					
+					// 製造log列表
+					var lotteryLog = $('#lotteryLog').DataTable();
+					
+					lotteryLog.clear();
+					
+					$('#totalLottery').text(totalLottery);
+					
+					for(var i=0; i<logData.length; i++) {
+						lotteryLog.row.add([
+							logData[i][0],
+							logData[i][1],
+							logData[i][2]
+						]);
+					}
+					
+					lotteryLog.order([2, 'desc'], [1, 'asc']).draw();
+					
+					// 製造user列表
+					var userLog = $('#userLog').DataTable();
+					
+					userLog.clear();
+					
+					$('#totalUser').text(totalUser);
+					$('#totalUser_show').text(totalUser > 49 ? 50 : totalUser);
+					
+					for(var i=0; i<userData.length; i++) {
+						userLog.row.add([
+							userData[i][0],
+							userData[i][1]
+						]);
+					}
+					
+					userLog.order([1, 'desc']).draw();
+				}
+			});
+		}
+	}
+	
+	return {
+		initApp : function() {
+			// 使用者進入本頁面
+			userAction.login();
+			
+			// 註冊抽獎按鈕
+			$('#goLottery').click(userAction.trustYourLucky);
+			
+			userAction.getLotteryLog();
+			
+			// 套用dataTables
+			$('#userLog').DataTable({'bFilter':false, 'paging':false, 'info':false, responsive: true}).draw();
+			$('#lotteryLog').DataTable({'bFilter':false, 'paging':false, 'info':false, responsive: true}).draw();
+			
+			setInterval(function(){
+				userAction.getLotteryLog();
+			}, 5000);
+			
+			// 拿掉浮水印
+			var eleA = document.getElementsByTagName('a');
+			if(eleA.length != 0) {
+				eleA[0].innerHTML = '';
+			}
+		}
+	}
+}
+
+</script>
+<style>
+	table, th, td {
+		border: 1px solid black;
+		border-collapse: collapse;
+	}
+	td {
+		width: 33%;
+		padding: 5px;
+	}
+	.div-log {
+		float:left;
+	}
+	.center {
+		text-align: center; 
+		margin: auto;
+		padding: 10px;
+	}
+	.client-table {
+		text-align: center; 
+	}
+	.congra {
+		color: purple;
+		font-size: 53px;
+	}
+</style>
+</head>
+<body>
+	<div width="100%" class="center"><h1>每日抽獎</h1></div>
+	<div width="100%" class="center">
+		<b>親愛的 <span id="userName"></span> 您好</b>
+		<br>
+		<b>目前您擁有: <span id="userMoney"></span>元</b>
+	</div>
+	<div class="center">
+		<span>說明: 抽一次100塊, 每天會獲得500塊</span>
+		<br>
+		<span>加油歐 :D</span>
+		<br>
+		<span>p.s. 美化之後再改版</span>
+		<br>
+		<br>
+		<button name="button" type="button" id="goLottery" class="btn btn-primary">抽獎</button>
+	</div>
+	<div class="congra center" id="congra"></div>
+	<div class="center"><canvas id="canvas" height="10"></canvas></div>
+	<div style="padding:10px;">
+		<div class="div-log" style="width:49%">
+			<table class="client-table table table-striped table-bordered table-hover" id="userLog">
+				<thead>
+					<tr>
+						<td colspan="2">
+							使用者財產排名(總使用人數<span id="totalUser">NaN</span>人, 顯示<span id="totalUser_show">50</span>人)
+						</td>
+					</tr>
+					<tr>
+						<td>
+							使用者
+						</td>
+						<td>
+							財產總額
+						</td>
+					</tr>
+				</thead>
+			</table>
+		</div>
+		<div class="div-log" style="width:2%">&nbsp;</div>
+		<div class="div-log" style="width:49%">
+			<table class="client-table table table-striped table-bordered table-hover" id="lotteryLog">
+				<thead>
+					<tr>
+						<td colspan="3">
+							使用者中獎排名(抽獎次數: <span id="totalLottery">NaN</span>次)
+						</td>
+					</tr>
+					<tr>
+						<td>
+							使用者
+						</td>
+						<td>
+							中獎時間
+						</td>
+						<td>
+							中獎金額
+						</td>
+					</tr>
+				</thead>
+			</table>
+		</div>
+	</div>
+</body>
+</html>

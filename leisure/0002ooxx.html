@@ -1,0 +1,360 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<script src="../lib/prototype.js"></script>
+<script language="JavaScript">
+
+Event.observe(window, "load", initApp);
+
+function initApp() {
+
+	var min = 0, MAX = 1, WIN = 10, DRAW = 0, LOSE = -10;
+	
+	var winPattern = [[0, 1, 2], 
+					  [0, 4, 8], 
+					  [0, 3, 6], 
+					  [1, 4, 7], 
+					  [2, 5, 8], 
+					  [3, 4, 5], 
+					  [6, 7, 8], 
+					  [6, 4, 2]];
+
+	var button = {
+	
+		restart : function() {
+		
+			var content = "";
+	
+			content += "<tr><td>";
+			
+			content += "<input id=\"First\" style=\"width:240px;height:120px;font-size:50px;\" type=\"button\" value=\"First\"/>";
+				
+			content += "<input id=\"Last\" style=\"width:240px;height:120px;font-size:50px;\" type=\"button\" value=\"Last\"/>";
+				
+			content += "</td></tr>";
+			
+			$("GamePlace").update(content);
+			
+			$("Player").update("未選擇");
+			
+			$("outputChoose").disabled = true;
+			
+			$('First').observe('click', button.FirstLast);
+	
+			$('Last').observe('click', button.FirstLast);
+		
+		},
+		
+		FirstLast : function() {
+		
+			$("outputChoose").disabled = false;
+
+			$("Player").update((Math.random() > 0.5) ? "O" : "X");
+
+			var content = "";
+			
+			for(var i=0; i<3; i++) {
+			
+				content += "<tr><td>";
+			
+				for(var j=0; j<3; j++) {
+				
+					content += "<input id=\"btn" + (i*3+j) + "\" name=\" \" style=\"width:120px;height:120px;font-size:50px;\" type=\"button\" value=\" \"/>";
+				
+				}
+				
+				content += "</td></tr>";
+				
+			}
+			
+			$("GamePlace").update(content);
+			
+			for(var i=0; i<9; i++) $('btn'+i).observe('click', mediocre.switchChar);
+			
+			if(event.element().id == "Last") mediocre.switchChar();
+			
+		}
+	
+	};
+	
+	var mediocre = {
+	
+		switchChar : function() {
+		
+			var choose = null;
+			
+			if(event.element().name == " ") {
+			
+				choose = event.element().id.substring(3,4);
+			
+			}
+			console.log(choose+", "+event.element().name);
+			if(choose == null) {
+					
+				choose = mm.bestChoose();
+				
+				mediocre.doAction(choose);
+				
+				event.element().name = " ";
+					
+			} else {
+			
+				if($("btn"+choose).value == " ") {
+			
+					mediocre.doAction(choose);
+					
+					event.element().name = "123124";
+					
+					if(mediocre.RUWin() == 0) mediocre.switchChar();
+				
+				}
+			
+			}
+
+		},
+				
+		doAction : function(choose) {
+
+			var Player = $("Player").innerHTML;
+			
+			$("btn"+choose).setValue(Player);
+				
+			var flag = mediocre.RUWin();
+				
+			if(flag == 0) {
+				
+				$("Player").update(($("Player").innerHTML == "O") ? "X" : "O");
+				
+			} else if(flag == -1) {
+				
+				mediocre.NoOneWin();
+					
+			}
+			
+		},
+		
+		RUWin : function() {
+
+			var nowStatus = mediocre.getStatus();
+
+			var flag = mediocre.ComparePattern(nowStatus);
+				
+			if( flag != -1 )  {
+			
+				return mediocre.FoundWinner(winPattern[flag]);
+				
+			}
+			
+			if(mediocre.fullPanel(nowStatus)) {
+			
+				return -1;
+				
+			}
+			
+			return 0;
+
+		},
+
+		calcReward : function(nowStatus) {
+
+			var flag = mediocre.ComparePattern(nowStatus);
+			
+			if(flag != -1) {
+			
+				return nowStatus[winPattern[flag][0]];
+				
+			}
+			
+			return flag;
+							  
+		},
+		
+		ComparePattern : function(nowStatus) {
+
+			var winTarget = -1;
+
+			for(var i=0; i<8; i++) {
+			
+				if(nowStatus[winPattern[i][0]] != " " && nowStatus[winPattern[i][0]] == nowStatus[winPattern[i][1]] && nowStatus[winPattern[i][0]] == nowStatus[winPattern[i][2]]) {
+				
+					winTarget = i;
+					
+				}
+				
+			}
+			
+			return winTarget;
+
+		},
+		
+		getStatus : function() {
+		
+			var nowStatus = new Array(9);
+			
+			for(var i=0; i<9; i++) nowStatus[i] = $("btn"+i).value;
+			
+			return nowStatus;
+		
+		},
+	
+		fullPanel : function(nowStatus) {
+
+			for(var i=0; i<9; i++) {
+			
+				if(nowStatus[i] == " ") return false;
+				
+			}
+			
+			return true;
+
+		},
+		
+		NoOneWin : function() {
+
+			for(var j=0; j<9; j++) {
+					
+				$("btn"+j).disabled = true;
+					
+			}
+
+		},
+		
+		FoundWinner : function(winPattern) {
+		
+			for(var i=0; i<9; i++) {
+			
+				if(i != winPattern[0] && i != winPattern[1] && i != winPattern[2]) {
+			
+					$("btn"+i).disabled = true;
+					
+				}
+			
+			}
+			
+			$("outputChoose").disabled = true;
+			
+			return 1;
+		
+		}
+	
+	};
+	
+	var mm = {
+	
+		bestChoose : function() {
+
+			var nowStatus = mediocre.getStatus();
+			
+			return mm.minMAX(nowStatus, $("Player").innerHTML, MAX)[0];	
+
+		},
+	
+		outputChoose : function() {
+
+			var nowStatus = mediocre.getStatus();
+
+			alert(mm.minMAX(nowStatus, $("Player").innerHTML, MAX));
+
+		},
+
+		minMAX : function(nowStatus, Player, plot) {
+
+			var winner = mediocre.calcReward(nowStatus);
+
+			if(winner == "-1") {
+			
+				if(mediocre.fullPanel(nowStatus)) {
+			
+					return [-1, DRAW];
+				
+				}
+				
+				var initFlag = 0, good = [null, null];
+				
+				for(var i=0; i<9; i++) {
+				
+					if(nowStatus[i] == " ") {
+					
+						var simStatus = nowStatus.slice();
+
+						simStatus[i] = Player;
+						
+						var score = mm.minMAX(simStatus, (Player == "O") ? "X" : "O", (plot == MAX) ? min : MAX);
+						
+						if(initFlag == 0) {
+						
+							good = [i, score[1]];
+							
+							initFlag = 1;
+						
+						} else if(plot == MAX) {
+						
+							if(score[1] > good[1]) {
+							
+								good = [i, score[1]];
+							
+							}
+						
+						} else {
+						
+							if(score[1] < good[1]) {
+							
+								good = [i, score[1]];
+							
+							}
+						
+						}
+				
+					}
+				
+				}
+				
+				return good;
+				
+			} else {
+			
+				if(winner == $("Player").innerHTML) return [-1, WIN];
+				
+				else return [-1, LOSE];
+				
+			}
+
+		}
+	
+	};
+	
+	$('restart').observe('click', button.restart);
+	
+	$('outputChoose').observe('click', mm.outputChoose);
+	
+	button.restart();
+	
+}
+
+</script>
+
+<body style="background-color:#EEEEEE">
+	<table width="100%" height="100%">
+		<tr align="center" valign="center">
+			<td>
+				<table>
+					<tr><td align="center" style="font-size:100px;"><span>圈圈叉叉</span></td></tr>
+					<tr><td align="center" style="font-size:35px;"><span>你現在是: </span><span id="Player"></span></td></tr>
+					<tr><td align="center" style="font-size:20px;"><span>現在挑戰的是：</span><span style="color:red">你贏不了的電腦 </span></td></tr>
+					<tr>
+						<td>
+							<table id="GamePlace" align="center">
+								
+							</table>
+						</td>
+					</tr>
+				</table>
+				<br>
+				<input id="restart" type="button" style="font-size:30px" value="重來"/>
+				<input id="outputChoose" type="hidden" style="font-size:30px" value="下哪?"/>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>

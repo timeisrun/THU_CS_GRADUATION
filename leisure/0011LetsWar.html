@@ -1,0 +1,270 @@
+<html>
+<head>
+<title>自然爭鬥</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script type='text/JavaScript' src='../lib/prototype.js'></script>
+<script language="JavaScript">
+Event.observe(window, 'load', new letsWar().initApp);
+
+function letsWar() {
+	// 繪點大小
+	var pointWeight = 8;
+	
+	// 個體百分比
+	var individual = 0.1;
+	
+	// 界線百分比
+	var minLine = 0.1;
+	var maxLine = 0.55;
+	
+	// 突變機率
+	var mutation = 0.001;
+	
+	// 秒數
+	var process = 0.1;
+	
+	// 顏色
+	var colorArray = ['red', 'blue', 'yellow', 'green', 'purple'];
+	
+	var width = 100;
+	var height = 100;
+	
+	var widthPoint = 100;
+	var heightPoint = 100;
+	
+	var nowStatus = [];
+	
+	var tooLess = false;
+	
+	var ctx;
+	var canvas;
+	
+	// 物件狀態
+	var objectStatus = [];
+	
+	// 物件定義
+	function dot(x, y, r, speed, color) {
+		this.x = x;
+		this.y = y;
+		this.r = 10; // 覓食範圍
+		this.speed = speed;
+		this.color = color;
+		this.flag = 1;
+		this.value = 1;
+	}
+	
+	var objAction = {
+		getGoodFoodIndex : function(x, y, r, value) {
+			var target = -1;
+			var targetFraction = -1;
+			
+			// 偵測最佳食物評分
+			for(var i=0; i<objectStatus.length; i++) {
+				// 跑到已經被吃掉的食物時跳過
+				if(objectStatus[i].flag == 0) {
+					continue;
+				}
+				
+				// 跑到自己時跳過
+				if(x == objectStatus[i].x && y == objectStatus[i].y) {
+					continue;
+				}
+			
+				// 算斜邊長
+				var ttote = Math.sqrt(Math.pow(Math.abs(x - objectStatus[i].x), 2) + Math.pow(Math.abs(y - objectStatus[i].y), 2));
+				
+				// 如果距離超出自己的覓食範圍就跳過
+				if(ttote > r) {
+					continue;
+				}
+				
+				// 算評分, 且如果在一格距離內會特殊倍增
+				var fraction = ttote < 2 ? objectStatus[i].value * 1000 : objectStatus[i].value / ttote;
+				
+				// 比較有沒有更優
+				if(fraction > targetFraction) {
+					target = i;
+					targetFraction = fraction;
+				}
+			}
+			
+			return target;
+		},
+		
+		gotoGoodFoodWay : function(pk, target) {
+			// 如果食物在旁邊就吃掉, 並移動過去
+			if(Math.abs(pk.x - target.x) < 2 && Math.abs(pk.y - target.y) < 2) {
+				target.flag = 0;
+			
+				pk.x = target.x;
+				pk.y = target.y;
+				
+				// 同顏色直接相加
+				if(pk.color == target.color) {
+					pk.value += target.value;
+				} else {
+					// 不同色則減半
+					pk.value += target.value / 2;
+				}
+				
+				return;
+			}
+			
+			// 不在則往該方向移動
+			if(target.x - pk.x > 0) {
+				pk.x++;
+			} else if(target.x - pk.x < 0) {
+				pk.x--;
+			}
+			
+			if(target.y - pk.y > 0) {
+				pk.y++;
+			} else if(target.y - pk.y < 0) {
+				pk.y--;
+			}
+		}
+	};
+
+	var func = {
+		judgeExist : function(pk) {
+			if(pk.flag == 0) {
+				return;
+			}
+			
+			// 偵測最佳目標
+			var target = objAction.getGoodFoodIndex(pk.x, pk.y, pk.r, pk.value);
+			
+			// 有就移動過去那個方向
+			if(target != -1) {
+				objAction.gotoGoodFoodWay(pk, objectStatus[target]);
+			}
+		},
+		
+		calcStatus : function() {
+			// 由大到小排序
+			objectStatus.sort(function(a, b) {
+				return b.value - a.value;
+			});
+			
+			// 依序判斷
+			for(var i=0; i<objectStatus.length; i++) {
+				func.judgeExist(objectStatus[i]);
+			}
+			
+			// 剔除已經消失的食物
+			for(var i=objectStatus.length-1; i>=0; i--) {
+				if(objectStatus[i].flag == 0) {
+					objectStatus.splice(i, 1);
+				}
+			}
+		},
+		
+		randomStatus : function() {
+			var total = widthPoint * heightPoint * individual;
+			
+			for(var i=0; i<total; i++) {
+				var indexX = Math.floor(Math.random() * widthPoint);
+				var indexY = Math.floor(Math.random() * heightPoint);
+				var indexR = Math.floor(Math.random() * 100);
+				var indexSpeed = 1;
+				var indexColor = colorArray[Math.floor(Math.random() * colorArray.length)];
+				
+				objectStatus.push(new dot(indexX, indexY, indexR, indexSpeed, indexColor));
+			}
+		},
+		
+		drawStatus : function() {
+			ctx.clearRect(0, 0, width, height);
+			
+			for(var i=0; i<objectStatus.length; i++) {
+				ctx.fillStyle = objectStatus[i].color;
+				ctx.fillRect(objectStatus[i].x * pointWeight, objectStatus[i].y * pointWeight, pointWeight, pointWeight);
+			}
+		},
+		
+		detectStrategy : function() {
+			var rate = objectStatus.length / (widthPoint * heightPoint * individual);
+			if(rate < 0.2) {
+				tooLess = true;
+			} else if(rate > 0.8) {
+				tooLess = false;
+			}
+		},
+		
+		newMob : function() {
+			// 取得初始值和目前存活數差之隨機亂數生成量
+			var total = Math.floor(Math.random() * widthPoint * heightPoint * individual - objectStatus.length);
+			
+			if(tooLess) {
+				total *= 0.005;
+			} else {
+				total *= 0.001;
+			}
+			
+			for(var i=0; i<total; i++) {
+				var indexX = Math.floor(Math.random() * widthPoint);
+				var indexY = Math.floor(Math.random() * heightPoint);
+				
+				var equalsFlag = false;
+				for(var j=0; j<objectStatus.length; j++) {
+					if(indexX == objectStatus[j].x && indexY == objectStatus[j].y) {
+						equalsFlag = true;
+						break;
+					}
+				}
+				
+				if(!equalsFlag) {
+					var indexR = Math.floor(Math.random() * 100);
+					var indexSpeed = 1;
+					var indexColor = colorArray[Math.floor(Math.random() * colorArray.length)];
+					
+					objectStatus.push(new dot(indexX, indexY, indexR, indexSpeed, indexColor));
+				}
+			}
+		},
+		
+		tikTok : function() {
+			func.drawStatus();
+			
+			func.detectStrategy();
+			
+			func.newMob();
+			
+			func.calcStatus();
+			
+			setTimeout(func.tikTok, process * 1000);
+		}
+	} 
+	
+	
+	return {
+		initApp : function() {
+			// 取得畫面大小賦予給canvas
+			var viewport = document.viewport.getDimensions();
+			width = viewport.width * 0.99;
+			height = viewport.height * 0.98;
+			
+			widthPoint = Math.floor(width / pointWeight);
+			heightPoint = Math.floor(height / pointWeight);
+			
+			canvas = $('canvas');
+			canvas.width = width;
+			canvas.height = height;
+			
+			ctx = canvas.getContext('2d');
+			
+			// 給予nowStatus亂數狀態
+			func.randomStatus();
+			
+			// 開始
+			func.tikTok();
+		}
+	}
+}
+
+</script>
+</head>
+<body>
+	<canvas id="canvas" width="100" height="100"></canvas>
+</body>
+</html>

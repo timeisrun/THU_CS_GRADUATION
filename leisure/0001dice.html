@@ -1,0 +1,70 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<script src="../lib/prototype.js"></script>
+<script language="JavaScript">
+
+function gettt() {
+
+	var amount = $("amount").value;
+	var time = $("time").value;
+	
+	var answer = new Array(amount*6+1);
+	
+	for(var i=0; i<amount*6+1; i++) answer[i] = 0;
+	
+	for(var i=0; i<time; i++) {
+		
+		var total = 0;
+		
+		for(var j=0; j<amount; j++) {
+		
+			total += Math.floor(Math.random() * 6)+1;
+			
+		}
+		
+		answer[total] += 1;
+		
+	}
+	
+	var context = "<table border=\"3px\"><tr><td align=\"center\">點數</td><td>出現次數</td></tr>";
+	
+	for(var i=0; i<amount*6+1; i++) {
+	
+		if(answer[i] != 0) {
+		
+			context += "<tr><td align=\"center\">" + i + "</td><td>";
+		
+			for(var j=0; j<answer[i]; j++) {
+			
+				context += "*";
+				
+			}
+			
+			context += "</td></tr>";
+		
+		}
+		
+	}
+	
+	context += "</table>";
+	
+	$("context").innerHTML = context;
+	
+}
+
+</script>
+
+<body>
+
+<div id="FaceLabel">骰子數量</div>
+<input id="amount" value="1"/>
+<div>骰幾次</div>
+<input id="time" value="6"/><br>
+<input type="button" value="開骰" onclick="gettt()"/>
+<br><br>
+<div id="context"></div>
+
+</body>
+</html>

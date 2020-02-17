@@ -1,0 +1,113 @@
+<html>
+<head>
+<title>Canvas</title>
+<script type='text/JavaScript' src='../lib/prototype.js'></script>
+
+<script type="text/javascript">
+Event.observe(window, 'load', initApp);
+
+function initApp() {
+
+	var WinWidth = document.body.offsetWidth-10;
+	var WinHeight = document.body.clientHeight-20;
+	var MaxAngle = 10;
+	var MaxSize = 50;
+	var MaxSpeed = 10;
+	var MaxDotAmount = 50;
+	
+	var canvas = $("canvas");
+	canvas.width  = WinWidth
+	canvas.height = WinHeight
+	var ctx = canvas.getContext("2d");
+	ctx.clearRect(0, 0, WinWidth, WinHeight);
+	
+	function dot(x, y, mx, my, size, speed, color) {
+	
+		this.x = x;
+		this.y = y;
+		this.mx = mx;
+		this.my = my;
+		this.size = size;
+		this.speed = speed;
+		this.color = color;
+	
+	}
+	
+	var Controller;
+	var DotCount = 0;
+	var dotSet = new Array();
+	
+	var FS = {
+		draw : function() {
+		
+			for(var i=0; i<dotSet.size(); i++) {
+				FS.moveDot(dotSet[i]);
+			}
+			
+			ctx.clearRect(0, 0, WinWidth, WinHeight);		
+			for(var i=0; i<dotSet.size(); i++) {
+				FS.drawDot(dotSet[i]);
+			}
+		
+			if(DotCount < MaxDotAmount) {
+				DotCount++;
+				dotSet.push(FS.addDot());
+			}
+		
+			//ctx.beginPath();
+			//ctx.moveTo(varX, varY);
+			
+			//ctx.strokeStyle = "rgb(" + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + ")";
+			//ctx.lineTo(varX, varY);
+			
+		},
+		
+		moveDot : function(tempDot) {
+			if(FS.isNotLegal(Math.pow(tempDot.mx, 2)/1000+ WinHeight/2, WinHeight)) {
+				tempDot.speed *= -1;
+			}
+			
+			tempDot.mx += tempDot.speed;
+			tempDot.x = tempDot.mx + WinWidth/2;
+			tempDot.y = Math.pow(tempDot.mx, 2)/1000+ WinHeight/2;
+		},
+		
+		drawDot : function(tempDot) {
+			ctx.beginPath();
+			ctx.fillStyle = tempDot.color;
+			ctx.arc(tempDot.x, tempDot.y, tempDot.size, 0, 2*Math.PI);
+			ctx.fill();
+		},
+		
+		addDot : function() {
+			return new dot(FS.gRV(WinWidth) + WinWidth * 0.1, FS.gRV(WinHeight) + WinHeight * 0.1, FS.gRV(MaxAngle)-Math.floor(MaxAngle/2) + MaxAngle * 0.1, FS.gRV(MaxAngle)-Math.floor(MaxAngle/2) + MaxAngle * 0.1, FS.gRV(MaxSize) + MaxSize * 0.1, FS.gRV(MaxSpeed) + MaxSpeed * 0.1, FS.gRC());
+		},
+		
+		isNotLegal : function(value, limit) {
+			if(value < 0 || value > limit) {
+				return true;
+			} else {
+				return false;
+			}
+		},
+		
+		gRV : function(range) {
+			return Math.floor(Math.random() * range);
+		},
+		
+		gRC : function() {
+			return "rgb(" + FS.gRV(255) + "," + FS.gRV(255) + "," + FS.gRV(255) + ")";
+		}
+	
+	}
+	
+	Controller = setInterval(FS.draw, 10);
+		
+}
+
+</script>
+</head>
+<body>
+    <canvas id="canvas" width="150" height="150"></canvas>
+</body>
+</html>

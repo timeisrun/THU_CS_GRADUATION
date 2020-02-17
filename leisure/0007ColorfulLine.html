@@ -1,0 +1,54 @@
+<html>
+<head>
+<title>Canvas</title>
+<script type='text/JavaScript' src='../lib/prototype.js'></script>
+<script type="text/javascript">
+Event.observe(window, 'load', initApp);
+
+function initApp() {
+
+	var WinWidth = document.body.offsetWidth-10;
+	var WinHeight = document.body.clientHeight-20;
+
+	var canvas = $("canvas");
+	canvas.width = WinWidth;
+	canvas.height = WinHeight;
+	
+	var ctx = canvas.getContext("2d");
+	ctx.clearRect(0, 0, WinWidth, WinHeight);
+	
+	var varX = 0, varY = 0;
+	
+	var func = {
+	
+		mm : function() {
+			
+			ctx.beginPath();
+			ctx.moveTo(varX, varY);
+			
+			ctx.strokeStyle = func.gRC();
+			ctx.lineTo(event.pageX, event.pageY);
+			
+			ctx.stroke();
+			
+			varX = event.pageX;
+			varY = event.pageY;
+		
+		},
+		
+		gRC : function() {
+			return '#'+Math.random().toString(16).slice(2, 8);
+		}
+	
+	};
+
+	$('canvas').addEventListener("mousemove", func.mm);
+	
+}
+
+</script>
+</head>
+<body>
+	<canvas id="canvas" width="150" height="150"></canvas>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<html>
+<head>
+<title>自然繁衍</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script type='text/JavaScript' src='../lib/prototype.js'></script>
+<script language="JavaScript">
+Event.observe(window, 'load', new natureRick().initApp);
+
+function natureRick() {
+	// 繪點大小
+	var pointWeight = 8;
+	
+	// 個體百分比
+	var individual = 0.3;
+	
+	// 界線百分比
+	var minLine = 0.1;
+	var maxLine = 0.55;
+	
+	// 突變機率
+	var mutation = 0.001;
+	
+	// 秒數
+	var process = 0.1;
+	
+	var width = 100;
+	var height = 100;
+	
+	var widthPoint = 100;
+	var heightPoint = 100;
+	
+	var nowStatus = [];
+	var nextStatus = [];
+	
+	var ctx;
+	var canvas;
+	
+	var tooLess = true;
+
+	var func = {
+		judgeExist : function(locX, locY) {
+			var neighbor = 0;
+			
+			if (locX > 0 && nowStatus[locX-1][locY] == 1) {
+				neighbor++;
+			}
+			
+			if (locX < widthPoint-1 && nowStatus[locX+1][locY] == 1) {
+				neighbor++;
+			}
+			
+			if (locY > 0 && nowStatus[locX][locY-1] == 1) {
+				neighbor++;
+			}
+			
+			if (locY < heightPoint-1 && nowStatus[locX][locY+1] == 1) {
+				neighbor++;
+			}
+			
+			if (tooLess && (neighbor == 2 || neighbor == 3)) {
+				return 1;
+			} else if (neighbor == 2) {
+				return 1;
+			} else {
+				if(Math.random() < mutation) {
+					return 1;
+				} else {
+					return 0;
+				}
+			}
+		},
+		
+		calcStatus : function() {
+			for(var i=0; i<widthPoint; i++) {
+				for(var j=0; j<heightPoint; j++) {
+					nextStatus[i][j] = func.judgeExist(i, j);
+				}
+			}
+		},
+		
+		clearStatus : function() {
+			nextStatus = [];
+			for(var i=0; i<widthPoint; i++) {
+				var row = [];
+				for(var j=0; j<heightPoint; j++) {
+					row.push(0);
+				}
+				nextStatus.push(row);
+			}
+		},
+		
+		randomStatus : function() {
+			var total = widthPoint * heightPoint * individual;
+			
+			for(var i=0; i<total; i++) {
+				nextStatus[Math.floor(Math.random() * widthPoint)][Math.floor(Math.random() * heightPoint)] = 1;
+			}
+		},
+		
+		transferStatus : function() {
+			nowStatus = nextStatus;
+		},
+		
+		drawStatus : function() {
+			ctx.clearRect(0, 0, width, height);
+			
+			for(var i=0; i<widthPoint; i++) {
+				for(var j=0; j<heightPoint; j++) {
+					if(nowStatus[i][j] == 1) {
+						ctx.fillRect(i*pointWeight, j*pointWeight, pointWeight, pointWeight);
+					}
+				}
+			}
+		},
+		
+		detectStrategy : function() {
+			var total = 0;
+			for(var i=0; i<widthPoint; i++) {
+				for(var j=0; j<heightPoint; j++) {
+					total += nextStatus[i][j];
+				}
+			}
+			
+			if (total > widthPoint * heightPoint * maxLine) {
+				tooLess = false;
+			} else if (total < widthPoint * heightPoint * minLine) {
+				tooLess = true;
+			}
+		},
+		
+		tikTok : function() {
+			func.transferStatus();
+			func.drawStatus();
+			
+			func.detectStrategy();
+			func.clearStatus();
+			func.calcStatus();
+			
+			setTimeout(func.tikTok, process * 1000);
+		}
+	} 
+	
+	
+	return {
+		initApp : function() {
+			// 取得畫面大小賦予給canvas
+			var viewport = document.viewport.getDimensions();
+			width = viewport.width * 0.99;
+			height = viewport.height * 0.98;
+			
+			widthPoint = Math.floor(width / pointWeight);
+			heightPoint = Math.floor(height / pointWeight);
+			
+			canvas = $('canvas');
+			canvas.width = width;
+			canvas.height = height;
+			
+			ctx = canvas.getContext('2d')
+			
+			// 初始化nextStatus, 給予空陣列
+			func.clearStatus();
+			
+			// 給予nextStatus亂數狀態
+			func.randomStatus();
+			
+			// 開始
+			func.tikTok();
+		}
+	}
+}
+
+</script>
+</head>
+<body>
+	<canvas id="canvas" width="100" height="100"></canvas>
+</body>
+</html>

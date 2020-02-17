@@ -1,0 +1,114 @@
+<html>
+<head>
+<title>Canvas</title>
+<script type='text/JavaScript' src='../lib/prototype.js'></script>
+
+<script type="text/javascript">
+Event.observe(window, 'load', initApp);
+
+function initApp() {
+
+	var WinWidth = document.body.offsetWidth-10;
+	var WinHeight = document.body.clientHeight-20;
+	var MaxRadius = 500;
+	var MaxSize = 50;
+	var MaxSpeed = 5;
+	var MaxDotAmount = 50;
+	
+	var canvas = $("canvas");
+	canvas.width  = WinWidth
+	canvas.height = WinHeight
+	var ctx = canvas.getContext("2d");
+	ctx.clearRect(0, 0, WinWidth, WinHeight);
+	
+	function dot(x, y, xr, yr, size, speed, color) {
+	
+		this.x = x;
+		this.y = y;
+		this.xr = xr;
+		this.yr = yr;
+		this.size = size;
+		this.speed = speed;
+		this.color = color;
+		this.flag = 1;
+	
+	}
+	
+	var Controller;
+	var DotCount = 0;
+	var dotSet = new Array();
+	
+	var FS = {
+		draw : function() {
+		
+			for(var i=0; i<dotSet.size(); i++) {
+				FS.moveDot(dotSet[i]);
+			}
+			
+			ctx.clearRect(0, 0, WinWidth, WinHeight);		
+			for(var i=0; i<dotSet.size(); i++) {
+				FS.drawDot(dotSet[i]);
+			}
+		
+			if(DotCount < MaxDotAmount) {
+				DotCount++;
+				dotSet.push(FS.addDot(0, 0, MaxRadius, MaxRadius, MaxSize, MaxSpeed));
+			}
+		
+			//ctx.beginPath();
+			//ctx.moveTo(varX, varY);
+			
+			//ctx.strokeStyle = "rgb(" + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + ")";
+			//ctx.lineTo(varX, varY);
+			
+		},
+		
+		moveDot : function(tempDot) {
+			if(FS.isNotLegal(tempDot.x + tempDot.speed, tempDot.xr)) {
+				tempDot.speed *= -1;
+				tempDot.flag *= -1;
+			}
+			
+			tempDot.x += tempDot.speed;
+			tempDot.y = Math.pow(Math.pow(tempDot.yr, 2) * (1 - Math.pow(tempDot.x, 2)/Math.pow(tempDot.xr, 2)), 0.5);
+		},
+		
+		drawDot : function(tempDot) {
+			ctx.beginPath();
+			ctx.fillStyle = tempDot.color;
+			ctx.arc(tempDot.x + WinWidth/2, tempDot.y * tempDot.flag + WinHeight/2, tempDot.size, 0, 2*Math.PI);
+			ctx.fill();
+		},
+		
+		addDot : function(xLoc, yLoc, xRadius, yRadius, size, speed) {
+			return new dot(FS.gRV(xLoc) + xLoc * 0.1, FS.gRV(yLoc) + yLoc * 0.1, FS.gRV(xRadius) + xRadius * 0.1, FS.gRV(yRadius) + yRadius * 0.1, FS.gRV(size) + size * 0.1, FS.gRV(speed) + speed * 0.1, FS.gRC());
+		},
+		
+		isNotLegal : function(value, limit) {
+			if(value <= limit * -1 || value >= limit) {
+				return true;
+			} else {
+				return false;
+			}
+		},
+		
+		gRV : function(range) {
+			return Math.floor(Math.random() * range);
+		},
+		
+		gRC : function() {
+			return "rgb(" + FS.gRV(255) + "," + FS.gRV(255) + "," + FS.gRV(255) + ")";
+		}
+	
+	}
+	
+	Controller = setInterval(FS.draw, 5);
+		
+}
+
+</script>
+</head>
+<body>
+    <canvas id="canvas" width="150" height="150"></canvas>
+</body>
+</html>

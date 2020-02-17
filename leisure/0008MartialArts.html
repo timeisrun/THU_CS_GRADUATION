@@ -1,0 +1,149 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>你我有緣</title>
+<style>
+table {
+	font-family: Microsoft JhengHei;
+	font-size:30px;
+}
+</style>
+<script type='text/JavaScript' src='../lib/jquery-3.3.1.js'></script>
+<script type="text/javascript">
+
+$(document).ready(function() {
+	var func = {
+		FadeIn : function(target, process, FICount) {
+			FICount += 0.1;
+			setTimeout(function() {
+				jQuery(target).css('opacity', FICount);
+				if(FICount < 1) {
+					func.FadeIn(target, process, FICount);
+				}
+			}, process/10);
+		},
+		
+		FadeOut : function(target, process, FOCount) {
+			FOCount -= 0.1;
+			setTimeout(function() {
+				jQuery(target).css('opacity', FOCount);
+				if(FOCount >= 0) {
+					func.FadeOut(target, process, FOCount);
+				}
+			}, process/10);
+		},
+		
+		setStyle: function(el, spec) {
+			for (var n in spec) {
+				el.style[n] = spec[n];
+			}
+		},
+		
+		BGPaint : function(locX, locY) {
+			var divUnit = document.createElement('div');
+			func.setStyle(divUnit,{
+				position : 'absolute',
+				left : locX,
+				top : locY
+			});
+			divUnit.innerHTML = Math.floor(Math.random() * 520);
+			divUnit.id = 'OPL';
+			$('#TargetShow').append(divUnit);
+			
+			setTimeout( function(){
+				if($('#OPL').length > 0) {
+					$('#OPL').remove();
+				}
+			}, 5000);		
+		}
+	};
+	
+	func.FadeIn($('#Title1'), 5000, 0);
+	func.FadeIn($('#Title2'), 8000, 0);
+	func.FadeIn($('#CYes'), 10000, 0);
+	func.FadeIn($('#CNo'), 10000, 0);
+	
+	// 按鈕觸發事件
+	$('#CYes').on('click', function() {
+		alert('你好棒棒! 但是我改天再寫:P');
+	});
+	
+	$('#CNo').on('click', function() {
+		$('#CYes').remove();
+		$('#CNo').remove();
+		$('#Title1').remove();
+		$('#Title2').remove();
+		
+		var spanUnit = document.createElement('span');
+		spanUnit.id = 'Titile1';
+		spanUnit.innerHTML = '真可惜...<br>';
+		func.setStyle(spanUnit,{
+			opacity : '0'
+		});
+		$('#TitleF').append(spanUnit);
+		
+		func.FadeIn(spanUnit, 5000, 0);
+		
+		var spanUnit = document.createElement('span');
+		spanUnit.id = 'Titile2';
+		spanUnit.innerHTML = '跟你對話耗費了我百年功力, 稍微給你點懲罰, 有緣再相見:D';
+		func.setStyle(spanUnit,{
+			opacity : '0'
+		});
+		$('#TitleF').append(spanUnit);
+		
+		func.FadeIn(spanUnit, 8000, 0);
+		
+		window.onbeforeunload = function() {
+			for(var i=0; i<10; i++) {
+				window.open('0008MartialArts.html', Math.floor(Math.random()*10000), '');
+			}
+		};
+	});
+
+	// 背景程式
+	var BGPrint = false;
+	
+	$('#TargetSense').on('mousedown', function() {
+		BGPrint = true;
+	});
+	
+	$('#TargetSense').on('mouseup', function() {
+		BGPrint = false;
+	});
+	
+    $('#TargetSense').on('mousemove', function() {
+		if(BGPrint) {
+			func.BGPaint(event.offsetX, event.offsetY);
+		}
+	});
+	
+	// 手機版
+	$('#TargetSense').on('touchmove', function() {
+		func.BGPaint(event.touches['0'].pageX, event.touches['0'].pageY);
+	});
+	
+});
+
+</script>
+</head>
+<body style="position:relative; -webkit-user-select: none;">
+	<div id="TargetShow" style="position:absolute; left:0; top:0; width:100%; height:100%; z-index:100;overflow:hidden;"></div>
+	<div id="TargetSense" style="position:absolute; left:0; top:0; width:100%; height:100%; z-index:200;"></div>
+	<table style="position:absolute; top:50%; left:50%; transform: translate(-50%, -50%); z-index:300;">
+		<tr>
+			<td id="TitleF" align="center" style="background-color:white;">
+				<span id="Title1" style="opacity:0">你好，相逢即是有緣</span>
+				<br>
+				<span id="Title2" style="opacity:0">小朋友我看你根骨奇佳，是百年難得一見的練武奇才，我想收你入門下，你可願意？</span>
+			</td>
+		</tr>
+		<tr>
+			<td align="center">
+				<input id="CYes" type="button" value="好的！承蒙您的賞識！" style="opacity:0; font-size:30px"/>
+				<input id="CNo" type="button" value="你誰啊幹！走開！" style="opacity:0; font-size:30px"/>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>

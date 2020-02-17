@@ -1,0 +1,80 @@
+<html>
+<head>
+<title>Canvas</title>
+<script type='text/JavaScript' src='../lib/prototype.js'></script>
+
+<script type="text/javascript">
+Event.observe(window, 'load', initApp);
+
+function initApp() {
+
+	var WinWidth = document.body.offsetWidth-100;
+	var WinHeight = document.body.clientHeight-100;
+
+	var canvas = $("canvas");
+	canvas.width  = WinWidth
+	canvas.height = WinHeight
+	
+	var ctx = canvas.getContext("2d");
+	
+	ctx.clearRect(0, 0, WinWidth, WinHeight);
+	
+	var varX = 10, varY = 10;
+	
+	var LineAmount = 0, unit = 5;
+	
+	var control = [1, 0];
+	
+	var KeepDraw;
+	
+	var chococo = {
+		
+		draw : function() {
+		
+			if(LineAmount > 400) {
+				clearTimeout(KeepDraw);
+			}
+		
+			ctx.beginPath();
+			ctx.moveTo(varX, varY);
+		
+			varX += (WinWidth - (LineAmount * unit)) * control[0]; 
+			varY += (WinHeight - (LineAmount * unit)) * control[1];
+		
+			ctx.strokeStyle = "rgb(" + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + ")";
+			ctx.lineTo(varX, varY);
+			
+			ctx.stroke();
+			
+			LineAmount++;
+			
+			control = chococo.CV(control);
+			
+		},
+		
+		CV : function(flag) {
+		
+			if(flag[0] == 1 && flag[1] == 0) {
+				return [0, 1];
+			} else if(flag[0] == 0 && flag[1] == 1) {
+				return [-1, 0];
+			} else if(flag[0] == -1 && flag[1] == 0) {
+				return [0, -1];
+			} else {
+				return [1, 0];
+			}
+		
+		}
+	
+	}
+	
+	KeepDraw = setInterval(chococo.draw, 100);
+		
+}
+
+</script>
+</head>
+<body>
+    <canvas id="canvas" width="150" height="150"></canvas>
+</body>
+</html>
